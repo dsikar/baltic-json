@@ -16,7 +16,8 @@ baltic-json/
 │   └── Screenshot 2026-01-30 at 15.56.09.png
 ├── prompts/            # Task definition prompts
 │   ├── 01-vector-data-cleaning.md
-│   └── 02-vector-to-raster-conversion.md
+│   ├── 02-vector-to-raster-conversion.md
+│   └── 03-contour-generation.md
 ├── scripts/            # Processing scripts (to be created)
 ├── output/             # Generated output files (to be created)
 └── work-diary.md       # Project work log
@@ -32,7 +33,14 @@ The project works with GeoJSON FeatureCollection data containing:
 
 **Note**: Raw data files are not included in this repository. Please do not contact the author for data access.
 
-## Workflows
+## Complete Processing Pipeline
+
+The project implements a three-stage pipeline for converting vector polygon data into classified contour lines:
+
+```
+Vector Polygons (GeoJSON) → Raster (TIFF) → Contour Lines (GeoJSON)
+     Step 1: Clean         Step 2: Convert    Step 3: Generate
+```
 
 ### 1. Vector Data Cleaning
 Defined in `prompts/01-vector-data-cleaning.md`:
@@ -53,6 +61,18 @@ Defined in `prompts/02-vector-to-raster-conversion.md`:
 7. Visualization and validation
 
 Reference visualization: `images/Screenshot 2026-01-30 at 15.56.09.png` shows expected output with high-value areas highlighted.
+
+### 3. Contour Line Generation
+Defined in `prompts/03-contour-generation.md`:
+1. Load and validate raster TIFF
+2. Prepare data for contouring
+3. Generate contour lines at 25 DN intervals
+4. Convert to vector format (LineStrings)
+5. Simplify and clean contours
+6. Create classified output (10 classes: 0-25, 25-50, ..., 225-255)
+7. Validation and visualization
+
+**Output**: Contour lines representing isolines of equal DN value, classified into 10 categories.
 
 ## Contact
 **Corresponding Author**: Blazej Jan Barski

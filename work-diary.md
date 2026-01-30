@@ -49,3 +49,98 @@
 - Which DN values represent NoData?
 - What are acceptable minimum area thresholds?
 - Should adjacent polygons with same DN be merged?
+
+---
+
+### Vector-to-Raster Conversion Workflow Development
+**Time**: 16:00 UTC
+
+#### Context Clarification:
+1. **Geographic Area Corrected**
+   - Data actually covers Scotland and NE England (not Baltic Sea despite repo name)
+   - Reference visualization examined: `images/Screenshot 2026-01-30 at 15.56.09.png`
+   - Shows high-value DN areas (black polygons) representing threshold-exceeded regions
+
+2. **Goal Understanding**
+   - Convert vector polygons with DN values to raster TIFF format
+   - This is an intermediate step toward final contour generation
+   - Proof of concept approach: work on small spatial subset first
+
+#### Documentation Created:
+1. **Vector-to-Raster Prompt**: Created `prompts/02-vector-to-raster-conversion.md`
+   - Comprehensive 7-step POC workflow
+   - Includes spatial subsetting for efficient testing
+   - Documents input data structure with JSON examples
+   - Technical specifications: libraries, functions, parameters
+   - Quick start guide for implementation
+   - Expected deliverables and success criteria
+   - Added extensive context for independent agent execution
+
+2. **Reference Image Added**: `images/Screenshot 2026-01-30 at 15.56.09.png`
+   - Visual target for validation
+   - Shows expected output: Scotland/NE England with high-value areas highlighted
+
+3. **README Updated**
+   - Expanded to document both cleaning and conversion workflows
+   - Corrected geographic area
+   - Updated project structure
+   - Added rasterio and numpy to requirements
+   - Status updated to POC phase
+
+---
+
+### Complete Pipeline Definition
+**Time**: 16:15 UTC
+
+#### End Goal Clarified:
+The complete processing pipeline consists of **three stages**:
+
+```
+Stage 1: Vector Cleaning → Stage 2: Rasterization → Stage 3: Contour Generation
+   (GeoJSON polygons)         (TIFF raster)           (GeoJSON contours)
+```
+
+**Final Output**: Contour lines (isolines) representing areas of equal DN value
+
+#### Contour Specifications:
+- **DN Value Range**: 0-255
+- **Contour Interval**: 25 DN units
+- **Number of Classes**: 10
+- **Contour Levels**: 25, 50, 75, 100, 125, 150, 175, 200, 225, 250
+- **Classification**:
+  - Class 1: 0-25
+  - Class 2: 25-50
+  - Class 3: 50-75
+  - Class 4: 75-100
+  - Class 5: 100-125
+  - Class 6: 125-150
+  - Class 7: 150-175
+  - Class 8: 175-200
+  - Class 9: 200-225
+  - Class 10: 225-255
+
+#### Documentation Created:
+1. **Contour Generation Prompt**: Created `prompts/03-contour-generation.md`
+   - Defines final stage of processing pipeline
+   - 7-step workflow for generating contour lines from raster
+   - Specifies 10-class classification scheme
+   - Multiple implementation options (GDAL, matplotlib, scikit-image)
+   - Contour styling and visualization guidelines
+   - Includes GDAL command-line alternative
+   - Technical specifications and deliverables
+
+2. **README Updated**
+   - Added complete 3-stage pipeline overview
+   - Visual pipeline diagram
+   - Added prompt 03 to project structure
+   - Updated workflow section with contour generation details
+
+#### Current Status:
+- **Stage 1**: Planned (cleaning workflow defined)
+- **Stage 2**: Ready for implementation (POC rasterization workflow)
+- **Stage 3**: Planned (contour generation workflow defined)
+
+#### Next Actions:
+- Execute Stage 2 POC: Vector-to-raster conversion on spatial subset
+- Validate raster output against reference visualization
+- Proceed to Stage 3: Contour generation once raster is validated
