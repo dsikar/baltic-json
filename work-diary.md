@@ -144,3 +144,52 @@ Stage 1: Vector Cleaning → Stage 2: Rasterization → Stage 3: Contour Generat
 - Execute Stage 2 POC: Vector-to-raster conversion on spatial subset
 - Validate raster output against reference visualization
 - Proceed to Stage 3: Contour generation once raster is validated
+
+---
+
+### Quantization and Data Preservation Updates
+**Time**: 16:30 UTC
+
+#### Key Refinements:
+1. **Quantization of DN Values**
+   - DN values must be quantized to bucket centers before rasterization
+   - 10 buckets with intervals of 25: (0-25, 25-50, ..., 225-255)
+   - Bucket centers: 12.5, 37.5, 62.5, 87.5, 112.5, 137.5, 162.5, 187.5, 212.5, 240.0
+   - Example: DN=37 → quantized to 37.5, DN=189 → quantized to 187.5
+   - Purpose: Standardize values for consistent contour generation
+
+2. **Preserve Vector Data at Each Stage**
+   - Spatial subset must be saved as GeoJSON: `output/subset_extract.json`
+   - Preserves vector format for the extracted region
+   - Allows validation and alternative processing paths
+   - Contains original DN values before quantization
+
+3. **Updated Workflow (Stage 2)**
+   - Now 8 steps (was 7)
+   - Added explicit quantization step (Step 3)
+   - Spatial subset saved as .json file (Step 2)
+   - TIFF uses Float32 to store decimal bucket centers
+
+#### Documentation Updated:
+- **Prompt 02**: Added quantization logic with code example
+- **Prompt 02**: Updated to save subset as GeoJSON (required, not optional)
+- **Prompt 02**: Output now includes both .json and .tif files
+- **Prompt 02**: Updated data type to Float32 for decimal values
+- **Prompt 02**: Added quantization function to key functions list
+- **README**: Updated Stage 2 workflow to highlight quantization
+- **README**: Now shows 8-step process with quantization as key feature
+
+#### Technical Details:
+```python
+# Quantization mapping
+0-24   → 12.5
+25-49  → 37.5
+50-74  → 62.5
+75-99  → 87.5
+100-124 → 112.5
+125-149 → 137.5
+150-174 → 162.5
+175-199 → 187.5
+200-224 → 212.5
+225-255 → 240.0
+```

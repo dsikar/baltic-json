@@ -53,12 +53,15 @@ Defined in `prompts/01-vector-data-cleaning.md`:
 ### 2. Vector to Raster Conversion (Current POC)
 Defined in `prompts/02-vector-to-raster-conversion.md`:
 1. Load and validate vector data
-2. Spatial subset for proof of concept
-3. Filter by DN threshold (high-value areas)
-4. Determine raster parameters
-5. Rasterize polygons
-6. Create GeoTIFF output
-7. Visualization and validation
+2. Spatial subset for proof of concept (save as `output/subset_extract.json`)
+3. **Quantize DN values to bucket centers** (12.5, 37.5, 62.5, ..., 240.0)
+4. Filter by DN threshold (optional)
+5. Determine raster parameters
+6. Rasterize polygons with quantized values
+7. Create GeoTIFF output
+8. Visualization and validation
+
+**Key Feature**: DN values are quantized to 10 bucket centers (intervals of 25) preparing data for contour generation.
 
 Reference visualization: `images/Screenshot 2026-01-30 at 15.56.09.png` shows expected output with high-value areas highlighted.
 
