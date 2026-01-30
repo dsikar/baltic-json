@@ -17,46 +17,63 @@ This is the **third step** in the data processing pipeline. It takes the raster 
   - See `work-diary.md` for project history
 
 ## Overview
-Generate contour lines (isolines) from a raster TIFF file based on DN (Digital Number) values. Contours represent boundaries between value classes at regular intervals of 25, creating 10 classification levels.
+Generate contour lines (isolines) from a raster TIFF file with quantized DN values. The input raster contains pixel values that have been quantized to 10 bucket centers. Contours are drawn at the **boundaries between buckets** (intervals of 25), creating 10 classification regions.
+
+**Key Concept**: Input raster has quantized bucket center values → Contours drawn at bucket boundaries → Output shows 10 classified regions.
 
 ## Input Data
 - **File**: `output/test_raster.tif` (or similar, from Step 2)
 - **Format**: GeoTIFF with single band
-- **Value Range**: 0-255 (DN values)
-- **Data Type**: UInt8 or UInt16
+- **Pixel Values**: Quantized to bucket centers: 12.5, 37.5, 62.5, 87.5, 112.5, 137.5, 162.5, 187.5, 212.5, 240.0
+- **Data Type**: Float32 (contains decimal values)
 - **CRS**: Projected coordinates (should be embedded in TIFF)
 - **Geographic Area**: Scotland and NE England (or subset for POC)
+- **Source**: Vector polygons quantized in Step 2
 
 ## Contour Specifications
 
+### Understanding the Input Data
+The input raster (from Step 2) has pixel values quantized to **bucket centers**:
+- Bucket 1 center: 12.5 (represents original DN 0-24)
+- Bucket 2 center: 37.5 (represents original DN 25-49)
+- Bucket 3 center: 62.5 (represents original DN 50-74)
+- ... and so on ...
+- Bucket 10 center: 240.0 (represents original DN 225-255)
+
 ### Classification Scheme
 - **Number of Classes**: 10
-- **Interval**: 25 DN units
-- **Contour Levels**: 25, 50, 75, 100, 125, 150, 175, 200, 225, 250
+- **Interval**: 25 DN units (at bucket boundaries)
+- **Contour Levels** (bucket boundaries): 25, 50, 75, 100, 125, 150, 175, 200, 225
 
-### Contour Classes
+**Note**: We draw 9 contour lines at the boundaries, which create 10 regions. No contour at 250 needed since max value is 240.0.
+
+### Contour Classes (Regions between contour lines)
 ```
-Class  1:   0 -  25
-Class  2:  25 -  50
-Class  3:  50 -  75
-Class  4:  75 - 100
-Class  5: 100 - 125
-Class  6: 125 - 150
-Class  7: 150 - 175
-Class  8: 175 - 200
-Class  9: 200 - 225
-Class 10: 225 - 255
+Class  1:   0 -  25  (raster value 12.5)
+Class  2:  25 -  50  (raster value 37.5)
+Class  3:  50 -  75  (raster value 62.5)
+Class  4:  75 - 100  (raster value 87.5)
+Class  5: 100 - 125  (raster value 112.5)
+Class  6: 125 - 150  (raster value 137.5)
+Class  7: 150 - 175  (raster value 162.5)
+Class  8: 175 - 200  (raster value 187.5)
+Class  9: 200 - 225  (raster value 212.5)
+Class 10: 225 - 255  (raster value 240.0)
 ```
+
+**Visualization**: Each region bounded by contour lines contains pixels with the corresponding bucket center value.
 
 ## Workflow Steps
 
 ### 1. Load and Validate Raster
 - Read TIFF file using Rasterio
-- Validate data type and value range
+- Validate data type (should be Float32) and value range
+- **Verify quantized values**: Should only contain bucket centers (12.5, 37.5, 62.5, ..., 240.0)
 - Check CRS information
 - Display basic statistics:
-  - Min/max values
-  - Value distribution
+  - Min/max values (expect 12.5 to 240.0)
+  - Unique values (should be limited to bucket centers)
+  - Value distribution histogram
   - NoData handling
   - Raster dimensions
 
@@ -151,7 +168,8 @@ Class 10: 225 - 255
 ## Configuration Parameters
 
 ### Adjustable Settings
-- `contour_levels`: List of DN values for contours [25, 50, 75, ..., 250]
+- `contour_levels`: List of DN values for contours [25, 50, 75, 100, 125, 150, 175, 200, 225]
+  - Note: 9 contour lines at bucket boundaries (no 250 needed, max value is 240.0)
 - `interval`: Contour interval (25)
 - `min_length`: Minimum contour segment length to keep (remove artifacts)
 - `simplify_tolerance`: Douglas-Peucker simplification tolerance (optional)
@@ -195,32 +213,44 @@ class_colors = {
 5. Verify attribute table has all expected fields
 
 ## Notes for Implementation
+- **CRITICAL**: Input raster has quantized values (12.5, 37.5, ..., 240.0), not continuous 0-255
+- Verify quantized values before generating contours (use numpy unique)
+- Generate 9 contour lines at bucket boundaries [25, 50, 75, 100, 125, 150, 175, 200, 225]
 - Start with basic contour generation (no smoothing/simplification)
-- GDAL's `gdal_contour` is very robust - consider using it first
+- GDAL's `gdal_contour` with `-fl` flag is very robust - consider using it first
 - If using matplotlib, contours need to be converted to Shapely geometries
 - Handle edge effects (contours at raster boundaries)
 - Consider memory usage for large rasters - may need tiling
 - NoData areas should not generate contours
+- Each contour line represents a boundary between two bucket classes
 
 ## Example Code Snippet
 ```python
 import rasterio
-from rasterio.features import shapes
 import geopandas as gpd
 from shapely.geometry import shape
 import numpy as np
+import matplotlib.pyplot as plt
 
-# Load raster
+# Load raster with quantized values
 with rasterio.open('output/test_raster.tif') as src:
-    array = src.read(1)
+    array = src.read(1)  # Values are already quantized (12.5, 37.5, ..., 240.0)
     transform = src.transform
     crs = src.crs
 
-# Classify into 10 classes
-classified = np.digitize(array, bins=[25, 50, 75, 100, 125, 150, 175, 200, 225, 250])
+# Verify quantized values
+unique_values = np.unique(array[array > 0])
+print(f"Unique raster values: {unique_values}")
+# Expected: [12.5, 37.5, 62.5, 87.5, 112.5, 137.5, 162.5, 187.5, 212.5, 240.0]
 
-# Generate contours using GDAL or matplotlib
-# ... implementation details ...
+# Generate contours at bucket boundaries
+contour_levels = [25, 50, 75, 100, 125, 150, 175, 200, 225]
+
+# Option A: Using matplotlib
+X, Y = np.meshgrid(np.arange(array.shape[1]), np.arange(array.shape[0]))
+contours = plt.contour(X, Y, array, levels=contour_levels)
+
+# Option B: Using GDAL (see command-line section below)
 ```
 
 ## Expected Deliverables
@@ -246,15 +276,19 @@ classified = np.digitize(array, bins=[25, 50, 75, 100, 125, 150, 175, 200, 225, 
 
 ## Alternative: Using GDAL Command Line
 ```bash
-# Generate contours using GDAL
-gdal_contour -a DN -i 25 \
+# Generate contours using GDAL at bucket boundaries
+gdal_contour -a DN -fl 25 50 75 100 125 150 175 200 225 \
   -f "GeoJSON" \
   output/test_raster.tif \
   output/contours.geojson
 
-# This creates contours at intervals of 25
 # -a DN: attribute name for contour value
-# -i 25: interval of 25
+# -fl: fixed levels (9 contour lines at bucket boundaries)
+# Note: Input raster has quantized values (12.5, 37.5, ..., 240.0)
+#       Contours drawn at boundaries (25, 50, 75, ..., 225)
+
+# Alternative: using interval (may create extra contours)
+# gdal_contour -a DN -i 25 -f "GeoJSON" output/test_raster.tif output/contours.geojson
 ```
 
 ## Future Enhancements
@@ -268,20 +302,33 @@ gdal_contour -a DN -i 25 \
 
 ## Quick Start for Agent
 ```bash
-# 1. Verify input raster exists
+# 1. Verify input raster exists and check data type
 ls -lh output/test_raster.tif
+gdalinfo output/test_raster.tif | grep "Type"
+# Expected: Float32
 
-# 2. Check GDAL availability
+# 2. Verify quantized values in raster
+python3 << EOF
+import rasterio
+import numpy as np
+with rasterio.open('output/test_raster.tif') as src:
+    array = src.read(1)
+    unique = np.unique(array[array > 0])
+    print(f"Unique values: {unique}")
+    # Expected: [12.5, 37.5, 62.5, 87.5, 112.5, 137.5, 162.5, 187.5, 212.5, 240.0]
+EOF
+
+# 3. Check GDAL availability
 gdal_contour --version
-# OR use Python libraries
 
-# 3. Test with single contour level first
+# 4. Test with single contour level first (at bucket boundary)
 gdal_contour -a DN -fl 150 output/test_raster.tif output/test_contour.geojson
 
-# 4. Generate all contours
-# Implement full script with all 10 levels
+# 5. Generate all 9 contours at bucket boundaries
+gdal_contour -a DN -fl 25 50 75 100 125 150 175 200 225 \
+  -f "GeoJSON" output/test_raster.tif output/contours.geojson
 
-# 5. Validate in QGIS
+# 6. Validate in QGIS
 qgis output/test_raster.tif output/contours.geojson
 ```
 

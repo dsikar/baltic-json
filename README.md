@@ -67,15 +67,15 @@ Reference visualization: `images/Screenshot 2026-01-30 at 15.56.09.png` shows ex
 
 ### 3. Contour Line Generation
 Defined in `prompts/03-contour-generation.md`:
-1. Load and validate raster TIFF
-2. Prepare data for contouring
-3. Generate contour lines at 25 DN intervals
+1. Load and validate raster TIFF (with quantized values)
+2. Verify quantized bucket centers (12.5, 37.5, ..., 240.0)
+3. Generate 9 contour lines at bucket boundaries (25, 50, 75, ..., 225)
 4. Convert to vector format (LineStrings)
 5. Simplify and clean contours
-6. Create classified output (10 classes: 0-25, 25-50, ..., 225-255)
+6. Assign class attributes (10 classes: 0-25, 25-50, ..., 225-255)
 7. Validation and visualization
 
-**Output**: Contour lines representing isolines of equal DN value, classified into 10 categories.
+**Output**: Contour lines at bucket boundaries, creating 10 classified regions between contours.
 
 ## Contact
 **Corresponding Author**: Blazej Jan Barski

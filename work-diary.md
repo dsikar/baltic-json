@@ -193,3 +193,38 @@ Stage 1: Vector Cleaning → Stage 2: Rasterization → Stage 3: Contour Generat
 200-224 → 212.5
 225-255 → 240.0
 ```
+
+---
+
+### Contour Generation Prompt Updated for Quantized Values
+**Time**: 16:45 UTC
+
+#### Updates to Stage 3 Workflow:
+1. **Aligned with Quantized Input**
+   - Updated prompt 03 to reflect that input raster contains quantized values
+   - Raster pixel values: 12.5, 37.5, 62.5, ..., 240.0 (bucket centers)
+   - Contour lines drawn at: 25, 50, 75, 100, 125, 150, 175, 200, 225 (bucket boundaries)
+   - Total: 9 contour lines creating 10 classified regions
+
+2. **Key Clarifications Added**
+   - Input data section: documented Float32 data type and quantized values
+   - Contour specifications: explained relationship between bucket centers and boundaries
+   - Example code: updated to verify quantized values before contouring
+   - GDAL commands: changed from `-i 25` (interval) to `-fl` (fixed levels) for precise control
+
+3. **Documentation Updated**
+   - Added validation step to verify quantized values using numpy unique
+   - Updated Quick Start with gdalinfo and python verification steps
+   - Enhanced Notes for Implementation with critical quantization reminder
+   - Updated expected output values in Load and Validate section
+
+4. **Technical Corrections**
+   - Removed contour level at 250 (max value is 240.0)
+   - Clarified 9 contour lines create 10 regions
+   - Updated configuration parameters
+   - Fixed example code to work with Float32 data
+
+#### README Updated:
+- Stage 3 description now mentions quantized bucket centers
+- Clarified that 9 contour lines are generated at bucket boundaries
+- Updated output description: "contour lines at bucket boundaries, creating 10 classified regions"
